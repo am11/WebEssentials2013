@@ -1010,17 +1010,33 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <UsingTask TaskName="MadsKristensen.EditorExtensions.PreBuildTask" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll">
+  <UsingTask TaskName="PreBuildTask" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll">
+    <ParameterGroup>
+      <SearchPath ParameterType="System.String" Required="true" />
+    </ParameterGroup>
     <Task>
       <Reference Include="Microsoft.CSharp" />
       <Reference Include="System.IO.Compression" />
       <Reference Include="System.IO.Compression.FileSystem" />
       <Reference Include="System.Web.Helpers" />
-      <Code Language="cs" Source="PreBuildTask.cs" />
+      <Using Namespace="System.Reflection" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+AppDomain.CurrentDomain.AssemblyResolve += (sender, e) => 
+{
+    if (File.Exists(SearchPath))
+        return Assembly.LoadFrom(SearchPath);
+
+    return null;
+};
+]]>
+      </Code>
     </Task>
   </UsingTask>
+  <Target Name="BeforeBeforeBuild" BeforeTargets="BeforeBuild">
+    <PreBuildTask SearchPath="$(ProjectDir)\..\packages\Pri.LongPath.1.2.2.0\lib\net45\Pri.LongPath.dll" />
+  </Target>
   <Target Name="BeforeBuild">
-    <MadsKristensen.EditorExtensions.PreBuildTask />
     <!-- Copy node.js server and services to tools -->
     <ItemGroup>
       <NodeServerSource Include="$(MSBuildProjectDirectory)\Resources\server\**\*.*" Exclude="$(MSBuildProjectDirectory)\Resources\server\.jshintrc" />
